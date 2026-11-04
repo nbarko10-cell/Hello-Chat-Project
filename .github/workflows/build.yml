@@ -1,0 +1,45 @@
+
+name: Build Hello Chat APKs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract ZIP
+        run: |
+          unzip -q HelloChat_Android_Starter_Corrected.zip -d extracted
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build Hello Chat
+        run: gradle -p extracted/HelloChat_Android_Starter/HelloChat assembleDebug
+
+      - name: Build Hello Chat Admin
+        run: gradle -p extracted/HelloChat_Android_Starter/HelloChatAdmin assembleDebug
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hello-Chat-APKs
+          path: |
+            extracted/HelloChat_Android_Starter/HelloChat/app/build/outputs/apk/debug/*.apk
+            extracted/HelloChat_Android_Starter/HelloChatAdmin/app/build/outputs/apk/debug/*.apk
