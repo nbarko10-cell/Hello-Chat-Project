@@ -14,18 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Check Project ZIP
-        run: |
-          test -f HelloChat_Android_Starter_Corrected.zip
-
-      - name: Extract Android Project
-        run: |
-          mkdir -p extracted
-          unzip -q HelloChat_Android_Starter_Corrected.zip -d extracted
-          find extracted -name gradlew -type f
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -33,28 +23,35 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Extract Project
+        run: |
+          mkdir -p extracted
+          unzip -q HelloChat_Android_Starter_Corrected.zip -d extracted
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
       - name: Build Hello Chat
         run: |
-          find extracted -type d -name HelloChat -print
-          PROJECT=$(find extracted -type f -name gradlew | grep '/HelloChat/gradlew$' | head -1)
-          test -n "$PROJECT"
-          chmod +x "$PROJECT"
-          cd "$(dirname "$PROJECT")"
-          ./gradlew assembleDebug
+          PROJECT_DIR=$(find extracted -type d -name HelloChat | head -1)
+          test -n "$PROJECT_DIR"
+          echo "Project: $PROJECT_DIR"
+          find "$PROJECT_DIR" -maxdepth 2 -type f
+          gradle -p "$PROJECT_DIR" assembleDebug
 
       - name: Build Hello Chat Admin
         run: |
-          PROJECT=$(find extracted -type f -name gradlew | grep '/HelloChatAdmin/gradlew$' | head -1)
-          test -n "$PROJECT"
-          chmod +x "$PROJECT"
-          cd "$(dirname "$PROJECT")"
-          ./gradlew assembleDebug
+          PROJECT_DIR=$(find extracted -type d -name HelloChatAdmin | head -1)
+          test -n "$PROJECT_DIR"
+          echo "Project: $PROJECT_DIR"
+          gradle -p "$PROJECT_DIR" assembleDebug
 
-      - name: Upload APK Files
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: Hello-Chat-APKs
           path: |
             extracted/**/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-          retention-days: 7
